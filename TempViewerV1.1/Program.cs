@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace TempViewerV1._1
+namespace TempViewer
 {
     internal static class Program
     {

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace TempViewerV1._1.Properties {
+namespace TempViewer.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
@@ -92,6 +92,18 @@ namespace TempViewerV1._1.Properties {
             }
             set {
                 this["AlwaysOnTop"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("192.168.1.100")]
+        public string DeviceIPAddress {
+            get {
+                return ((string)(this["DeviceIPAddress"]));
+            }
+            set {
+                this["DeviceIPAddress"] = value;
             }
         }
     }

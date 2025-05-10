@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace TempViewerV1._1.Properties {
+namespace TempViewer.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace TempViewerV1._1.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("TempViewerV1._1.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("TempViewer.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -76,6 +76,16 @@ namespace TempViewerV1._1.Properties {
         internal static System.Drawing.Bitmap IntervalIcon {
             get {
                 object obj = ResourceManager.GetObject("IntervalIcon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap IpIcon {
+            get {
+                object obj = ResourceManager.GetObject("IpIcon", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

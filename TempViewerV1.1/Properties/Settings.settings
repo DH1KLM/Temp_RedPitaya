@@ -1,5 +1,5 @@
 ﻿<?xml version='1.0' encoding='utf-8'?>
-<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="TempViewerV1._1.Properties" GeneratedClassName="Settings">
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="TempViewer.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
     <Setting Name="WindowLeft" Type="System.Int32" Scope="User">
@@ -19,6 +19,9 @@
     </Setting>
     <Setting Name="AlwaysOnTop" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="DeviceIPAddress" Type="System.String" Scope="User">
+      <Value Profile="(Default)">192.168.1.100</Value>
     </Setting>
   </Settings>
 </SettingsFile>

@@ -6,10 +6,11 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Net;
 using System.Windows.Forms.VisualStyles;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
-namespace TempViewerV1._1
+namespace TempViewer
 {
     public partial class Form1 : Form
     {
@@ -57,12 +58,10 @@ namespace TempViewerV1._1
             this.Top = Properties.Settings.Default.WindowTop;
             this.TopMost = Properties.Settings.Default.AlwaysOnTop;
             this.Padding = new Padding(0);
-
             this.Text = "Temp";
             this.Size = new Size(155, 100);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.BackColor = Color.FromArgb(64, 64, 64);
-
             this.MaximizeBox = false; 
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
         }
@@ -73,7 +72,6 @@ namespace TempViewerV1._1
             menu.ShowItemToolTips = true;
             menu.BackColor = Color.FromArgb(50, 50, 50);
             menu.Dock = DockStyle.Top;
-
             var alarmMenuItem = new ToolStripMenuItem
             {
                 Font = new Font("Segoe UI Emoji", 10),
@@ -83,7 +81,6 @@ namespace TempViewerV1._1
                 Padding = new Padding(0)
             };
             alarmMenuItem.Click += SetAlarmItem_Click;
-
             var intervalMenuItem = new ToolStripMenuItem
             {
                 Font = new Font("Segoe UI Emoji", 10),
@@ -93,7 +90,6 @@ namespace TempViewerV1._1
                 Padding = new Padding(0)
             };
             intervalMenuItem.Click += SetIntervalItem_Click;
-
             var startupMenuItem = new ToolStripMenuItem()
             {
                 ForeColor = Color.WhiteSmoke,
@@ -102,7 +98,6 @@ namespace TempViewerV1._1
                 Padding = new Padding(0),
                 Image = Properties.Resources.Startup
             };
-
             var minimizeOnStartupItem = new ToolStripMenuItem("Minimize on startup")
             {
                 Checked = Properties.Settings.Default.MinimizeOnStartup,
@@ -114,7 +109,6 @@ namespace TempViewerV1._1
                 Properties.Settings.Default.Save();
                 InitializeMenu();
             };
-
             var openOnStartupItem = new ToolStripMenuItem("Open on startup")
             {
                 Checked = !Properties.Settings.Default.MinimizeOnStartup,
@@ -124,12 +118,11 @@ namespace TempViewerV1._1
             {
                 Properties.Settings.Default.MinimizeOnStartup = false;
                 Properties.Settings.Default.Save();
-                InitializeMenu(); 
+                InitializeMenu();
             };
 
             startupMenuItem.DropDownItems.Add(minimizeOnStartupItem);
             startupMenuItem.DropDownItems.Add(openOnStartupItem);
-
 
             var topMostMenuItem = new ToolStripMenuItem()
             {
@@ -137,9 +130,8 @@ namespace TempViewerV1._1
                 Font = new Font("Segoe UI Emoji", 10),
                 ToolTipText = "Window mode settings",
                 Padding = new Padding(0),
-                Image = Properties.Resources.TopMostIcon 
+                Image = Properties.Resources.TopMostIcon
             };
-
             var alwaysOnTopItem = new ToolStripMenuItem("Always on top")
             {
                 Checked = Properties.Settings.Default.AlwaysOnTop,
@@ -150,9 +142,8 @@ namespace TempViewerV1._1
                 Properties.Settings.Default.AlwaysOnTop = true;
                 Properties.Settings.Default.Save();
                 this.TopMost = true;
-                InitializeMenu(); 
+                InitializeMenu();
             };
-
             var normalWindowItem = new ToolStripMenuItem("Normal window")
             {
                 Checked = !Properties.Settings.Default.AlwaysOnTop,
@@ -163,19 +154,52 @@ namespace TempViewerV1._1
                 Properties.Settings.Default.AlwaysOnTop = false;
                 Properties.Settings.Default.Save();
                 this.TopMost = false;
-                InitializeMenu(); 
+                InitializeMenu();
             };
             topMostMenuItem.DropDownItems.Add(alwaysOnTopItem);
             topMostMenuItem.DropDownItems.Add(normalWindowItem);
 
-            
+            var ipMenuItem = new ToolStripMenuItem
+            {
+                Font = new Font("Segoe UI Emoji", 10),
+                ToolTipText = "Set device IP address",
+                ForeColor = Color.WhiteSmoke,
+                Image = Properties.Resources.IpIcon, 
+                Padding = new Padding(0)
+            };
+            ipMenuItem.Click += SetIPItem_Click;
+
             menu.Items.Add(alarmMenuItem);
             menu.Items.Add(intervalMenuItem);
             menu.Items.Add(startupMenuItem);
             menu.Items.Add(topMostMenuItem);
+            menu.Items.Add(ipMenuItem);
 
             this.MainMenuStrip = menu;
             this.Controls.Add(menu);
+        }
+        private void SetIPItem_Click(object sender, EventArgs e)
+        {
+            string currentIP = Properties.Settings.Default.DeviceIPAddress;
+            string input = Microsoft.VisualBasic.Interaction.InputBox(
+                "Enter the IP address of the device:",
+                "Device IP Address",
+                currentIP
+            );
+
+            if (!string.IsNullOrWhiteSpace(input))
+            {
+                if (IPAddress.TryParse(input, out _))
+                {
+                    Properties.Settings.Default.DeviceIPAddress = input;
+                    Properties.Settings.Default.Save();
+                    MessageBox.Show($"Device IP address set to {input}", "Success");
+                }
+                else
+                {
+                    MessageBox.Show("Invalid IP address format. Please enter a valid IPv4 or IPv6 address.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
         }
         private void MinimizeOnStartupItem_Click(object sender, EventArgs e)
         {
@@ -395,9 +419,10 @@ namespace TempViewerV1._1
 
         private async Task HandleTemperatureFetchAsync()
         {
-            string ip = "192.168.1.100";
+            string ip = Properties.Settings.Default.DeviceIPAddress; ;
             int port = 80;
-            string request = "GET /temp0 HTTP/1.0\r\nHost: 192.168.1.100\r\nConnection: close\r\n\r\n";
+            string request = $"GET /temp0 HTTP/1.0\r\nHost: {ip}\r\nConnection: close\r\n\r\n";
+
 
             try
             {
@@ -485,20 +510,30 @@ namespace TempViewerV1._1
 
         private void UpdateTemperatureText(int temperature)
         {
+            if (temperatureBox == null)
+                return;
+
+            if (temperatureBox.InvokeRequired)
+            {
+                if (temperatureBox.IsDisposed || !temperatureBox.IsHandleCreated)
+                    return;
+
+                temperatureBox.Invoke((MethodInvoker)(() => UpdateTemperatureText(temperature)));
+                return;
+            }
+
             temperatureBox.Clear();
             temperatureBox.SelectionFont = new Font("Segoe UI", 14, FontStyle.Regular);
 
-            string prefix = "Red Pitaya "; 
+            string prefix = "Red Pitaya ";
             string temperatureText = (temperature == 0) ? "--°C" : $"{temperature}°C";
-            globalTemp = (temperature == 0) ? globalTemp = 0 : temperature;
+            globalTemp = (temperature == 0) ? 0 : temperature;
 
             temperatureBox.SelectionColor = Color.White;
             temperatureBox.AppendText(prefix);
-            temperatureBox.SelectionColor = isAlarmShown ? Color.Yellow  : Color.White;
+            temperatureBox.SelectionColor = isAlarmShown ? Color.Yellow : Color.White;
             temperatureBox.AppendText(temperatureText);
             temperatureBox.HideSelection = true;
-
-            
         }
     }
 }

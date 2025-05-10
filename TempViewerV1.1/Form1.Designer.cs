@@ -1,4 +1,4 @@
-﻿namespace TempViewerV1._1
+﻿namespace TempViewer
 {
     partial class Form1
     {
