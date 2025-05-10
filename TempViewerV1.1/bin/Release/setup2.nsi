@@ -14,11 +14,11 @@ Section "Install"
   SetOutPath "$INSTDIR"
 
   # Копирование файлов
-  File "TempViewerV1.1.exe"
-  File "TempViewerV1.1.exe.config"
+  File "TempViewer.exe"
+  File "TempViewer.exe.config"
 
   # Создание ярлыка на рабочем столе
-  CreateShortcut "$DESKTOP\TempViewer.lnk" "$INSTDIR\TempViewerV1.1.exe"
+  CreateShortcut "$DESKTOP\TempViewer.lnk" "$INSTDIR\TempViewer.exe"
 
   # Добавление команды для создания файла удаления
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -29,8 +29,8 @@ SectionEnd
 Section "Uninstall"
 
   # Удаление файлов
-  Delete "$INSTDIR\TempViewerV1.1.exe"
-  Delete "$INSTDIR\TempViewerV1.1.exe.config"
+  Delete "$INSTDIR\TempViewer.exe"
+  Delete "$INSTDIR\TempViewer.exe.config"
 
   # Удаление ярлыка
   Delete "$DESKTOP\TempViewer.lnk"

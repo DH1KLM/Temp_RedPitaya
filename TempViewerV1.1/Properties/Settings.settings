@@ -9,7 +9,7 @@
       <Value Profile="(Default)">100</Value>
     </Setting>
     <Setting Name="AlarmTemperature" Type="System.Single" Scope="User">
-      <Value Profile="(Default)">50</Value>
+      <Value Profile="(Default)">65</Value>
     </Setting>
     <Setting Name="UpdateInterval" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1000</Value>
