@@ -1,2 +1,2 @@
-# Temp_RedPitaya
-Temp_RedPitaya
+# TempRedPitaya
+TempRedPitaya
