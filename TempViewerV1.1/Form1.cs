@@ -9,6 +9,8 @@ using System.Windows.Forms;
 using System.Net;
 using System.Windows.Forms.VisualStyles;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace TempViewer
 {
@@ -25,25 +27,56 @@ namespace TempViewer
         private float globalTemp = 0;
         private bool isDragging = false;
         private Point offset;
-
+        private bool isMinimizedView = false;
+        private Size defaultSize;
+        private Point defaultLocation;
+        private Timer resizeSaveTimer = new Timer();
+        private bool isFormLoaded = false;
         public Form1()
         {
-            SetInitialWindowPosition();
             InitializeComponent();
+            SetInitialWindowPosition();
             InitializeWindowProperties();
-            InitializeMenu();
             InitializeTemperatureBox();
+            InitializeMenu();
             InitializeTimer();
             Menu_MouseIvent();
         }
 
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            bool t = Properties.Settings.Default.FirstLoad;
+            if (Properties.Settings.Default.FirstLoad == true)
+            {
+                isFormLoaded = true;
+                Properties.Settings.Default.FirstLoad = false;
+                t = Properties.Settings.Default.FirstLoad;
+                isMinimizedView = false;
+                if (!isMinimizedView)
+                    EnterNormalView();
+                else
+                    EnterMinimizedView();
+            }
+            else
+            {
+                isMinimizedView = Properties.Settings.Default.FlagSizeForm;
+                if (!isMinimizedView)
+                    EnterNormalView();
+                else
+                    EnterMinimizedView();
+            }
+            
+            UpdateTemperatureText(0);
+        }
+
         private void SetInitialWindowPosition()
         {
-            if (Properties.Settings.Default.WindowLeft >= 0 && Properties.Settings.Default.WindowTop >= 0)
+            var savedLocation = Properties.Settings.Default.WindowLocation;
+
+            if (savedLocation.X >= 0 && savedLocation.Y >= 0)
             {
                 this.StartPosition = FormStartPosition.Manual;
-                this.Left = Properties.Settings.Default.WindowLeft;
-                this.Top = Properties.Settings.Default.WindowTop;
+                this.Location = savedLocation;
             }
             else
             {
@@ -54,23 +87,48 @@ namespace TempViewer
         private void InitializeWindowProperties()
         {
             this.StartPosition = FormStartPosition.Manual;
-            this.Left = Properties.Settings.Default.WindowLeft;
-            this.Top = Properties.Settings.Default.WindowTop;
+            this.Location = Properties.Settings.Default.WindowLocation;
+            this.Width = Properties.Settings.Default.WindowWidth;
+            this.Height = Properties.Settings.Default.WindowHeight;
             this.TopMost = Properties.Settings.Default.AlwaysOnTop;
             this.Padding = new Padding(0);
-            this.Text = "Temp";
-            this.Size = new Size(155, 100);
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.BackColor = Color.FromArgb(64, 64, 64);
-            this.MaximizeBox = false; 
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.Text = "TempViewerRP";
+            this.Icon = Properties.Resources.Appicon;
+            this.Size = new Size(Properties.Settings.Default.WindowWidth, Properties.Settings.Default.WindowHeight);
+            this.BackColor = Properties.Settings.Default.ColorBackFomr;
+            this.MaximizeBox = false;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MouseDoubleClick += Form1_MouseDoubleClick;
+            this.Resize += Form_Resize;
+            resizeSaveTimer.Interval = 200;
+            resizeSaveTimer.Tick += ResizeSaveTimer_Tick;
+            this.SizeChanged += Form1_SizeChanged;
+            this.Load += Form1_Load;
+
+            if (Properties.Settings.Default.FirstLoad)
+            {
+                Rectangle screen = Screen.PrimaryScreen.WorkingArea;
+                int formWidth = this.Width;
+                int formHeight = this.Height;
+                int x = (screen.Width - formWidth) / 2;
+                int y = (screen.Height - formHeight) / 2;
+                this.Location = new Point(x, y);
+            }
+        }
+
+        private void Form1_SizeChanged(object sender, EventArgs e)
+        {
+            Debug.WriteLine($"[SizeChanged] New size: {this.Size.Width}x{this.Size.Height}");
+
+            StackTrace trace = new StackTrace(true); // true — сохраняет информацию о строках кода
+            Debug.WriteLine(trace.ToString());
         }
 
         private void InitializeMenu()
         {
             menu.Items.Clear();
             menu.ShowItemToolTips = true;
-            menu.BackColor = Color.FromArgb(50, 50, 50);
+            menu.BackColor = Properties.Settings.Default.ColorBackFomr;
             menu.Dock = DockStyle.Top;
             var alarmMenuItem = new ToolStripMenuItem
             {
@@ -90,40 +148,7 @@ namespace TempViewer
                 Padding = new Padding(0)
             };
             intervalMenuItem.Click += SetIntervalItem_Click;
-            var startupMenuItem = new ToolStripMenuItem()
-            {
-                ForeColor = Color.WhiteSmoke,
-                Font = new Font("Segoe UI Emoji", 10),
-                ToolTipText = "Application window settings",
-                Padding = new Padding(0),
-                Image = Properties.Resources.Startup
-            };
-            var minimizeOnStartupItem = new ToolStripMenuItem("Minimize on startup")
-            {
-                Checked = Properties.Settings.Default.MinimizeOnStartup,
-                CheckOnClick = true
-            };
-            minimizeOnStartupItem.Click += (s, e) =>
-            {
-                Properties.Settings.Default.MinimizeOnStartup = true;
-                Properties.Settings.Default.Save();
-                InitializeMenu();
-            };
-            var openOnStartupItem = new ToolStripMenuItem("Open on startup")
-            {
-                Checked = !Properties.Settings.Default.MinimizeOnStartup,
-                CheckOnClick = true
-            };
-            openOnStartupItem.Click += (s, e) =>
-            {
-                Properties.Settings.Default.MinimizeOnStartup = false;
-                Properties.Settings.Default.Save();
-                InitializeMenu();
-            };
-
-            startupMenuItem.DropDownItems.Add(minimizeOnStartupItem);
-            startupMenuItem.DropDownItems.Add(openOnStartupItem);
-
+            
             var topMostMenuItem = new ToolStripMenuItem()
             {
                 ForeColor = Color.WhiteSmoke,
@@ -164,20 +189,179 @@ namespace TempViewer
                 Font = new Font("Segoe UI Emoji", 10),
                 ToolTipText = "Set device IP address",
                 ForeColor = Color.WhiteSmoke,
-                Image = Properties.Resources.IpIcon, 
+                Image = Properties.Resources.IpIcon,
                 Padding = new Padding(0)
             };
             ipMenuItem.Click += SetIPItem_Click;
 
+            var customizeUIMenuItem = new ToolStripMenuItem()
+            {
+                Font = new Font("Segoe UI Emoji", 10),
+                ToolTipText = "Customize the user interface",
+                ForeColor = Color.WhiteSmoke,
+                Image = Properties.Resources.SettingsIcon,
+                Padding = new Padding(0),
+            };
+            var setColorItem = new ToolStripMenuItem("Set background color")
+            {
+                Font = new Font("Segoe UI Emoji", 10),
+            };
+            setColorItem.Click += (s, e) =>
+            {
+                using (ColorDialog colorDialog = new ColorDialog())
+                {
+                    colorDialog.Color = Properties.Settings.Default.ColorBackFomr;
+
+                    if (colorDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        Properties.Settings.Default.ColorBackFomr = colorDialog.Color;
+                        temperatureBox.BackColor = colorDialog.Color;
+                        menu.BackColor = colorDialog.Color;
+                        this.BackColor = colorDialog.Color;
+                        Properties.Settings.Default.Save();
+                    }
+                }
+            };
+            var setFontItem = new ToolStripMenuItem("Set font")
+            {
+                Font = new Font("Segoe UI Emoji", 10),
+            };
+            setFontItem.Click += (s, e) =>
+            {
+                using (FontDialog fontDialog = new FontDialog())
+                using (ColorDialog colorDialog = new ColorDialog())
+                {
+                    // Если есть сохранённый шрифт — загружаем
+                    if (Properties.Settings.Default.FontTempBox != null)
+                        fontDialog.Font = Properties.Settings.Default.FontTempBox;
+
+                    if (fontDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        Properties.Settings.Default.FontTempBox = fontDialog.Font;
+                        Properties.Settings.Default.FontTenpStyle = fontDialog.Font.Style;
+                        temperatureBox.Font = Properties.Settings.Default.FontTempBox;
+
+                        // Если есть сохранённый цвет — подставляем его в диалог цвета
+                        if (Properties.Settings.Default.FontTempColor != null)
+                            colorDialog.Color = Properties.Settings.Default.FontTempColor;
+
+                        if (colorDialog.ShowDialog() == DialogResult.OK)
+                        {
+                            Properties.Settings.Default.FontTempColor = colorDialog.Color;
+                            temperatureBox.ForeColor = Properties.Settings.Default.FontTempColor;
+                        }
+
+                        Properties.Settings.Default.Save();
+                    }
+                }
+            };
+            customizeUIMenuItem.DropDownItems.Add(setColorItem);
+            customizeUIMenuItem.DropDownItems.Add(setFontItem);
+
             menu.Items.Add(alarmMenuItem);
             menu.Items.Add(intervalMenuItem);
-            menu.Items.Add(startupMenuItem);
             menu.Items.Add(topMostMenuItem);
             menu.Items.Add(ipMenuItem);
+            menu.Items.Add(customizeUIMenuItem);
 
             this.MainMenuStrip = menu;
             this.Controls.Add(menu);
         }
+
+        private void Form1_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            Point tempLoc = this.Location;
+            ToggleViewMode();
+            this.Location = tempLoc;
+        }
+
+        private void ToggleViewMode()
+        {
+            if (isMinimizedView)
+                EnterNormalView();
+            else
+                EnterMinimizedView();
+        }
+
+        private void EnterMinimizedView()
+        {
+            //if (isMinimizedView)
+                //return; // Уже в этом режиме
+
+            isMinimizedView = true;
+
+            this.FormBorderStyle = FormBorderStyle.None;
+            Properties.Settings.Default.WindowLocation = this.Location;
+            this.ControlBox = false;
+            SetFormSizeByControlText(temperatureBox);
+            temperatureBox.Anchor = AnchorStyles.Top;
+
+            foreach (Control control in this.Controls)
+            {
+                if (control != temperatureBox)
+                    control.Visible = false;
+            }
+        }
+
+        private void EnterNormalView()
+        {
+            //if (!isMinimizedView)
+                //return; // Уже в нормальном виде
+
+            isMinimizedView = false;
+
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.Location = Properties.Settings.Default.WindowLocation;
+            this.Width = Properties.Settings.Default.WindowWidth;
+            this.Height = Properties.Settings.Default.WindowHeight;
+            temperatureBox.Anchor = AnchorStyles.Top;
+            temperatureBox.Dock = DockStyle.Top;
+            this.ControlBox = true;
+
+            if (isFormLoaded)
+            {
+                Rectangle screen = Screen.PrimaryScreen.WorkingArea;
+                int formWidth = this.Width;
+                int formHeight = this.Height;
+                int x = (screen.Width - formWidth) / 2;
+                int y = (screen.Height - formHeight) / 2;
+                this.Location = new Point(x, y);
+                isFormLoaded = false;
+            }
+
+            foreach (Control control in this.Controls)
+            {
+                control.Visible = true;
+            }
+        }
+
+        private void SetFormSizeByControlText(Control ctrl)
+        {
+            using (Graphics g = ctrl.CreateGraphics())
+            {
+
+                string tempStr = ctrl.Text;
+                string temperaturePart = "--°C"; // запасной вариант
+
+                Match match = Regex.Match(tempStr, @"(--|\d{1,3})°C");
+                if (match.Success)
+                {
+                    temperaturePart = match.Value; // строка, например "--°C" или "25°C"
+                }
+
+                // Получаем размер текста из контрола с его шрифтом
+                SizeF textSize = g.MeasureString(temperaturePart, ctrl.Font);
+
+                int paddingWidth = 0;  // отступы по ширине
+                int paddingHeight = 0; // отступы по высоте (учитываем рамки и заголовок окна)
+
+                int newWidth = (int)Math.Ceiling(textSize.Width) + paddingWidth;
+                int newHeight = (int)Math.Ceiling(textSize.Height) + paddingHeight;
+
+                this.Size = new Size(newWidth, newHeight);
+            }
+        }
+
         private void SetIPItem_Click(object sender, EventArgs e)
         {
             string currentIP = Properties.Settings.Default.DeviceIPAddress;
@@ -203,34 +387,42 @@ namespace TempViewer
         }
         private void MinimizeOnStartupItem_Click(object sender, EventArgs e)
         {
-            Properties.Settings.Default.MinimizeOnStartup = true;
-            Properties.Settings.Default.Save();
             InitializeMenu(); 
         }
 
         private void OpenOnStartupItem_Click(object sender, EventArgs e)
         {
-            Properties.Settings.Default.MinimizeOnStartup = false;
-            Properties.Settings.Default.Save();
             InitializeMenu();
-        }
-
-        private void SetStartupState()
-        {
-            if (Properties.Settings.Default.MinimizeOnStartup)
-            {
-                this.WindowState = FormWindowState.Minimized;
-            }
-            else
-            {
-                this.WindowState = FormWindowState.Normal;
-            }
         }
 
         protected override void OnLoad(EventArgs e)
         {
-            base.OnLoad(e);
-            SetStartupState(); 
+            base.OnLoad(e);          
+        }
+
+        private void Form_Resize(object sender, EventArgs e)
+        {
+            if (!isMinimizedView)
+            {
+                resizeSaveTimer.Stop();
+                resizeSaveTimer.Start(); // Перезапускаем таймер
+            }
+        }
+
+        private void ResizeSaveTimer_Tick(object sender, EventArgs e)
+        {
+            resizeSaveTimer.Stop();
+            if(!isMinimizedView)
+            {
+                Properties.Settings.Default.WindowWidth = this.Width;
+                Properties.Settings.Default.WindowHeight = this.Height;
+
+                temperatureBox.Height = Properties.Settings.Default.WindowHeight;
+                temperatureBox.Width = Properties.Settings.Default.WindowWidth;
+
+                Properties.Settings.Default.Save();
+            }
+            
         }
 
         private void InitializeTemperatureBox()
@@ -240,19 +432,20 @@ namespace TempViewer
                 BorderStyle = BorderStyle.None,
                 ReadOnly = true,
                 HideSelection = true,
-                BackColor = this.BackColor,
-                ForeColor = Color.White,
+                BackColor = Properties.Settings.Default.ColorBackFomr,
+                ForeColor = Properties.Settings.Default.FontTempColor,
                 Multiline = true,
                 ScrollBars = RichTextBoxScrollBars.None,
                 TabStop = false,
-                Height = 30,
-                Width = 170,
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left,
-                Dock = DockStyle.Bottom
+                Height = Properties.Settings.Default.WindowHeight,
+                Width = Properties.Settings.Default.WindowWidth,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left,
+                Dock = DockStyle.Top,
+                Font = Properties.Settings.Default.FontTempBox
             };
-
-            UpdateTemperatureText(0);
+            temperatureBox.MouseDoubleClick += Form1_MouseDoubleClick;
             this.Controls.Add(temperatureBox);
+            UpdateTemperatureText(0);
         }
 
         private void InitializeTimer()
@@ -267,9 +460,12 @@ namespace TempViewer
 
         private void Menu_MouseIvent()
         {
-            menu.MouseDown += Menu_MouseDown;
-            menu.MouseMove += Menu_MouseMove;
-            menu.MouseUp += Menu_MouseUp;
+                temperatureBox.MouseDown += TempBox_MouseDown;
+                temperatureBox.MouseMove += TempBox_MouseMove;
+                temperatureBox.MouseUp += TempBox_MouseUp;
+                menu.MouseDown += Menu_MouseDown;
+                menu.MouseMove += Menu_MouseMove;
+                menu.MouseUp += Menu_MouseUp;
         }
 
         private void Menu_MouseDown(object sender, MouseEventArgs e)
@@ -298,6 +494,36 @@ namespace TempViewer
         }
 
         private void Menu_MouseUp(object sender, MouseEventArgs e)
+        {
+            isDragging = false;
+        }
+
+        private void TempBox_MouseDown(object sender, MouseEventArgs e)
+        {
+
+            if (e.Button == MouseButtons.Left)
+            {
+                isDragging = true;
+                offset = e.Location;
+            }
+        }
+
+        private void TempBox_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isDragging)
+            {
+                Point newLocation = this.Location;
+                newLocation.X += e.X - offset.X;
+                newLocation.Y += e.Y - offset.Y;
+
+                if (newLocation != this.Location)
+                {
+                    this.Location = newLocation;
+                }
+            }
+        }
+
+        private void TempBox_MouseUp(object sender, MouseEventArgs e)
         {
             isDragging = false;
         }
@@ -501,40 +727,73 @@ namespace TempViewer
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-
-            Properties.Settings.Default.WindowLeft = this.Left;
-            Properties.Settings.Default.WindowTop = this.Top;
+            timer.Stop();
+            resizeSaveTimer.Stop();
+            if (!isMinimizedView)
+            {
+                Properties.Settings.Default.WindowWidth = this.Width;
+                Properties.Settings.Default.WindowHeight = this.Height;
+            }
+           
+            Properties.Settings.Default.WindowLocation = this.Location;
+            Properties.Settings.Default.FlagSizeForm = isMinimizedView;
             Properties.Settings.Default.Save();
             base.OnFormClosing(e);
+
         }
 
         private void UpdateTemperatureText(int temperature)
         {
-            if (temperatureBox == null)
+            if (temperatureBox == null || temperatureBox.IsDisposed || !temperatureBox.IsHandleCreated)
                 return;
 
             if (temperatureBox.InvokeRequired)
             {
-                if (temperatureBox.IsDisposed || !temperatureBox.IsHandleCreated)
-                    return;
-
-                temperatureBox.Invoke((MethodInvoker)(() => UpdateTemperatureText(temperature)));
-                return;
+                try
+                {
+                    temperatureBox.Invoke(new Action(() => UpdateTemperatureText(temperature)));
+                }
+                catch (ObjectDisposedException)
+                {
+                    // temperatureBox уничтожен во время Invoke — игнорируем
+                }
             }
+            else
+            {
+                try
+                {
+                    if (isMinimizedView)
+                    {
+                        temperatureBox.Clear();
+                        temperatureBox.SelectionFont = new Font(Properties.Settings.Default.FontTempBox, Properties.Settings.Default.FontTenpStyle);
+                        string temperatureText = (temperature == 0) ? "--°C" : $"{temperature}°C";
+                        globalTemp = (temperature == 0) ? 0 : temperature;
+                        temperatureBox.SelectionColor = Properties.Settings.Default.FontTempColor;
+                        temperatureBox.AppendText(temperatureText);
+                        temperatureBox.HideSelection = true;
+                    }
+                    else
+                    {
+                        temperatureBox.Clear();
+                        temperatureBox.SelectionFont = new Font(Properties.Settings.Default.FontTempBox, Properties.Settings.Default.FontTenpStyle);
 
-            temperatureBox.Clear();
-            temperatureBox.SelectionFont = new Font("Segoe UI", 14, FontStyle.Regular);
-
-            string prefix = "Red Pitaya ";
-            string temperatureText = (temperature == 0) ? "--°C" : $"{temperature}°C";
-            globalTemp = (temperature == 0) ? 0 : temperature;
-
-            temperatureBox.SelectionColor = Color.White;
-            temperatureBox.AppendText(prefix);
-            temperatureBox.SelectionColor = isAlarmShown ? Color.Yellow : Color.White;
-            temperatureBox.AppendText(temperatureText);
-            temperatureBox.HideSelection = true;
+                        string prefix = "Red Pitaya ";
+                        string temperatureText = (temperature == 0) ? "--°C" : $"{temperature}°C";
+                        globalTemp = (temperature == 0) ? 0 : temperature;
+                        temperatureBox.SelectionColor = Properties.Settings.Default.FontTempColor;
+                        temperatureBox.AppendText(prefix);
+                        temperatureBox.AppendText(temperatureText);
+                        temperatureBox.HideSelection = true;
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    // temperatureBox уничтожен между проверкой и использованием — игнорируем
+                }
+            }
+            
         }
+
     }
 }
 

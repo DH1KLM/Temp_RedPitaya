@@ -1,10 +1,10 @@
-D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.AssemblyReference.cache
-D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.Form1.resources
-D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.GenerateResource.cache
-D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.CoreCompileInputs.cache
 D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\TempViewer.exe.config
 D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\TempViewer.exe
 D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\TempViewer.pdb
+D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.AssemblyReference.cache
+D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.Form1.resources
 D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.Properties.Resources.resources
+D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.GenerateResource.cache
+D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.CoreCompileInputs.cache
 D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.exe
 D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.pdb
