@@ -50,5 +50,11 @@
     <Setting Name="FirstLoad" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="TargetIP" Type="System.String" Scope="User">
+      <Value Profile="(Default)">127.0.01</Value>
+    </Setting>
+    <Setting Name="TargetPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">12345</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -213,5 +213,29 @@ namespace TempViewer.Properties {
                 this["FirstLoad"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("127.0.01")]
+        public string TargetIP {
+            get {
+                return ((string)(this["TargetIP"]));
+            }
+            set {
+                this["TargetIP"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("12345")]
+        public int TargetPort {
+            get {
+                return ((int)(this["TargetPort"]));
+            }
+            set {
+                this["TargetPort"] = value;
+            }
+        }
     }
 }

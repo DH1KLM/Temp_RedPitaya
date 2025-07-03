@@ -7,10 +7,12 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Net;
-using System.Windows.Forms.VisualStyles;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using System.Text.Json;
+using System.Net;
+using System.Net.Sockets;
 
 namespace TempViewer
 {
@@ -32,6 +34,13 @@ namespace TempViewer
         private Point defaultLocation;
         private Timer resizeSaveTimer = new Timer();
         private bool isFormLoaded = false;
+        UdpClient udpClient = new UdpClient();
+
+        string targetIp = Properties.Settings.Default.TargetIP;
+        int targetPort = Properties.Settings.Default.TargetPort;  
+
+        public string JsonData { get; private set; }
+
         public Form1()
         {
             InitializeComponent();
@@ -255,6 +264,16 @@ namespace TempViewer
                     }
                 }
             };
+            var udpSettingsMenuItem = new ToolStripMenuItem
+            {
+                Font = new Font("Segoe UI Emoji", 10),
+                ToolTipText = "Enter the UDP target IP and port for Thetis Multi Meter I/O program.",
+                ForeColor = Color.WhiteSmoke,
+                Image = Properties.Resources.UdpIcon, 
+                Padding = new Padding(0)
+            };
+            udpSettingsMenuItem.Click += SetUdpSettingsItem_Click;
+
             customizeUIMenuItem.DropDownItems.Add(setColorItem);
             customizeUIMenuItem.DropDownItems.Add(setFontItem);
 
@@ -263,10 +282,13 @@ namespace TempViewer
             menu.Items.Add(topMostMenuItem);
             menu.Items.Add(ipMenuItem);
             menu.Items.Add(customizeUIMenuItem);
+            menu.Items.Add(udpSettingsMenuItem);
 
             this.MainMenuStrip = menu;
             this.Controls.Add(menu);
         }
+
+
 
         private void Form1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
@@ -305,9 +327,6 @@ namespace TempViewer
 
         private void EnterNormalView()
         {
-            //if (!isMinimizedView)
-                //return; // Уже в нормальном виде
-
             isMinimizedView = false;
 
             this.FormBorderStyle = FormBorderStyle.Sizable;
@@ -385,6 +404,100 @@ namespace TempViewer
                 }
             }
         }
+        private void SetUdpSettingsItem_Click(object sender, EventArgs e)
+        {
+            using (Form udpSettingsForm = new Form())
+            {
+                udpSettingsForm.Text = "Set UDP Target Settings";
+                udpSettingsForm.Size = new Size(300, 200);
+                udpSettingsForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                udpSettingsForm.StartPosition = FormStartPosition.CenterParent;
+                udpSettingsForm.MaximizeBox = false;
+                udpSettingsForm.MinimizeBox = false;
+
+                Label ipLabel = new Label() { Left = 10, Top = 20, Text = "Target IP:" };
+                System.Windows.Forms.TextBox ipBox = new System.Windows.Forms.TextBox()
+                {
+                    Left = 120,
+                    Top = 20,
+                    Width = 150,
+                    Text = Properties.Settings.Default.TargetIP
+                };
+
+                // Ограничиваем ввод только цифр, точек и backspace
+                ipBox.KeyPress += (s, ev) =>
+                {
+                    char ch = ev.KeyChar;
+                    if (!char.IsDigit(ch) && ch != '.' && ch != '\b')
+                    {
+                        ev.Handled = true;
+                    }
+                };
+
+                Label portLabel = new Label() { Left = 10, Top = 60, Text = "Target Port:" };
+                System.Windows.Forms.TextBox portBox = new System.Windows.Forms.TextBox()
+                {
+                    Left = 120,
+                    Top = 60,
+                    Width = 150,
+                    Text = Properties.Settings.Default.TargetPort.ToString()
+                };
+
+                System.Windows.Forms.Button okButton = new System.Windows.Forms.Button()
+                {
+                    Text = "OK",
+                    Left = 100,
+                    Width = 60,
+                    Top = 100,
+                    DialogResult = DialogResult.OK
+                };
+                System.Windows.Forms.Button cancelButton = new System.Windows.Forms.Button()
+                {
+                    Text = "Cancel",
+                    Left = 190,
+                    Width = 60,
+                    Top = 100,
+                    DialogResult = DialogResult.Cancel
+                };
+
+                okButton.Click += (s, ev) =>
+                {
+                    // Проверяем корректность IP
+                    if (!IPAddress.TryParse(ipBox.Text, out IPAddress ip) || ip.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        MessageBox.Show("Введите корректный IPv4 адрес.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    Properties.Settings.Default.TargetIP = ipBox.Text;
+
+                    if (int.TryParse(portBox.Text, out int port))
+                    {
+                        Properties.Settings.Default.TargetPort = port;
+                    }
+                    else
+                    {
+                        MessageBox.Show("Invalid port number. Please enter a valid integer.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    Properties.Settings.Default.Save();
+                    udpSettingsForm.Close();
+                };
+
+                udpSettingsForm.Controls.Add(ipLabel);
+                udpSettingsForm.Controls.Add(ipBox);
+                udpSettingsForm.Controls.Add(portLabel);
+                udpSettingsForm.Controls.Add(portBox);
+                udpSettingsForm.Controls.Add(okButton);
+                udpSettingsForm.Controls.Add(cancelButton);
+
+                udpSettingsForm.AcceptButton = okButton;
+                udpSettingsForm.CancelButton = cancelButton;
+
+                udpSettingsForm.ShowDialog();
+            }
+        }
         private void MinimizeOnStartupItem_Click(object sender, EventArgs e)
         {
             InitializeMenu(); 
@@ -405,7 +518,7 @@ namespace TempViewer
             if (!isMinimizedView)
             {
                 resizeSaveTimer.Stop();
-                resizeSaveTimer.Start(); // Перезапускаем таймер
+                resizeSaveTimer.Start(); 
             }
         }
 
@@ -648,8 +761,6 @@ namespace TempViewer
             string ip = Properties.Settings.Default.DeviceIPAddress; ;
             int port = 80;
             string request = $"GET /temp0 HTTP/1.0\r\nHost: {ip}\r\nConnection: close\r\n\r\n";
-
-
             try
             {
                 string response = await FetchTemperatureResponseAsync(ip, port, request);
@@ -676,6 +787,9 @@ namespace TempViewer
                 {
                     int roundedTemperature = (int)Math.Round(temperature);
                     UpdateTemperatureText(roundedTemperature);
+                    sendDataToUdp(roundedTemperature);
+
+                    //
 
                     float alarmTemp = Properties.Settings.Default.AlarmTemperature;
 
@@ -793,6 +907,23 @@ namespace TempViewer
             }
             
         }
+        public async void sendDataToUdp(int temperature)
+        {
+            var data = new { Temperature = temperature};
+            JsonData = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+            Console.WriteLine(JsonData); // Для проверки
+            try
+            {
+                byte[] sendBytes = System.Text.Encoding.UTF8.GetBytes(JsonData);
+                await udpClient.SendAsync(sendBytes, sendBytes.Length, targetIp, targetPort);
+
+                Console.WriteLine("Данные отправлены по UDP");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Ошибка при отправке UDP: " + ex.Message);
+            }
+        }
 
     }
 }
@@ -829,8 +960,8 @@ public class NonFocusableRichTextBox : RichTextBox
     {
         this.ReadOnly = true;
         this.TabStop = false;
-        this.Cursor = Cursors.Default; 
+        this.Cursor = Cursors.Default;
         this.EnableAutoDragDrop = false;
-        this.SetStyle(ControlStyles.Selectable, false); 
+        this.SetStyle(ControlStyles.Selectable, false);
     }
 }
