@@ -50,6 +50,7 @@ namespace TempViewer
             InitializeMenu();
             InitializeTimer();
             Menu_MouseIvent();
+
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -81,7 +82,6 @@ namespace TempViewer
         private void SetInitialWindowPosition()
         {
             var savedLocation = Properties.Settings.Default.WindowLocation;
-
             if (savedLocation.X >= 0 && savedLocation.Y >= 0)
             {
                 this.StartPosition = FormStartPosition.Manual;
@@ -96,6 +96,18 @@ namespace TempViewer
         private void InitializeWindowProperties()
         {
             this.StartPosition = FormStartPosition.Manual;
+            if (Properties.Settings.Default.WindowLocation.X <= -32000 || Properties.Settings.Default.WindowLocation.Y <= -32000)
+            {
+                Rectangle screen = Screen.PrimaryScreen.WorkingArea;
+                int formWidth = this.Width;
+                int formHeight = this.Height;
+                int x = (screen.Width - formWidth) / 2;
+                int y = (screen.Height - formHeight) / 2;
+                Properties.Settings.Default.WindowLocation = new Point(x, y);
+
+                Properties.Settings.Default.WindowWidth = 175;
+                Properties.Settings.Default.WindowHeight = 100;
+            }
             this.Location = Properties.Settings.Default.WindowLocation;
             this.Width = Properties.Settings.Default.WindowWidth;
             this.Height = Properties.Settings.Default.WindowHeight;
@@ -123,6 +135,11 @@ namespace TempViewer
                 int y = (screen.Height - formHeight) / 2;
                 this.Location = new Point(x, y);
             }
+
+            if(Properties.Settings.Default.MinimizeOnStartup)
+                this.WindowState = FormWindowState.Minimized;
+            //else
+              //  this.Size = new Size(Properties.Settings.Default.WindowWidth, Properties.Settings.Default.WindowHeight);
         }
 
         private void Form1_SizeChanged(object sender, EventArgs e)
@@ -178,6 +195,40 @@ namespace TempViewer
                 this.TopMost = true;
                 InitializeMenu();
             };
+
+            var startupMenuItem = new ToolStripMenuItem()
+            {
+                ForeColor = Color.WhiteSmoke,
+                Font = new Font("Segoe UI Emoji", 10),
+                ToolTipText = "Application window settings",
+                Padding = new Padding(0),
+                Image = Properties.Resources.Startup
+            };
+            var minimizeOnStartupItem = new ToolStripMenuItem("Minimize on startup")
+            {
+                Checked = Properties.Settings.Default.MinimizeOnStartup,
+                CheckOnClick = true
+            };
+            minimizeOnStartupItem.Click += (s, e) =>
+            {
+                Properties.Settings.Default.MinimizeOnStartup = true;
+                Properties.Settings.Default.Save();
+                InitializeMenu();
+            };
+            var openOnStartupItem = new ToolStripMenuItem("Open on startup")
+            {
+                Checked = !Properties.Settings.Default.MinimizeOnStartup,
+                CheckOnClick = true
+            };
+            openOnStartupItem.Click += (s, e) =>
+            {
+                Properties.Settings.Default.MinimizeOnStartup = false;
+                Properties.Settings.Default.Save();
+                InitializeMenu();
+            };
+            startupMenuItem.DropDownItems.Add(minimizeOnStartupItem);
+            startupMenuItem.DropDownItems.Add(openOnStartupItem);
+
             var normalWindowItem = new ToolStripMenuItem("Normal window")
             {
                 Checked = !Properties.Settings.Default.AlwaysOnTop,
@@ -279,6 +330,7 @@ namespace TempViewer
 
             menu.Items.Add(alarmMenuItem);
             menu.Items.Add(intervalMenuItem);
+            menu.Items.Add(startupMenuItem);
             menu.Items.Add(topMostMenuItem);
             menu.Items.Add(ipMenuItem);
             menu.Items.Add(customizeUIMenuItem);
@@ -316,7 +368,10 @@ namespace TempViewer
             Properties.Settings.Default.WindowLocation = this.Location;
             this.ControlBox = false;
             SetFormSizeByControlText(temperatureBox);
-            temperatureBox.Anchor = AnchorStyles.Top;
+            //temperatureBox.Anchor = AnchorStyles.Top;
+            temperatureBox.SelectAll();
+            temperatureBox.SelectionAlignment = HorizontalAlignment.Left;
+            temperatureBox.DeselectAll();
 
             foreach (Control control in this.Controls)
             {
@@ -333,8 +388,11 @@ namespace TempViewer
             this.Location = Properties.Settings.Default.WindowLocation;
             this.Width = Properties.Settings.Default.WindowWidth;
             this.Height = Properties.Settings.Default.WindowHeight;
-            temperatureBox.Anchor = AnchorStyles.Top;
+            //temperatureBox.Anchor = AnchorStyles.Top;
             temperatureBox.Dock = DockStyle.Top;
+            temperatureBox.SelectAll();
+            temperatureBox.SelectionAlignment = HorizontalAlignment.Left;
+            temperatureBox.DeselectAll();
             this.ControlBox = true;
 
             if (isFormLoaded)
@@ -414,6 +472,7 @@ namespace TempViewer
                 udpSettingsForm.StartPosition = FormStartPosition.CenterParent;
                 udpSettingsForm.MaximizeBox = false;
                 udpSettingsForm.MinimizeBox = false;
+                udpSettingsForm.StartPosition = FormStartPosition.CenterScreen;
 
                 Label ipLabel = new Label() { Left = 10, Top = 20, Text = "Target IP:" };
                 System.Windows.Forms.TextBox ipBox = new System.Windows.Forms.TextBox()
@@ -500,11 +559,15 @@ namespace TempViewer
         }
         private void MinimizeOnStartupItem_Click(object sender, EventArgs e)
         {
+            Properties.Settings.Default.MinimizeOnStartup = true;
+            Properties.Settings.Default.Save();
             InitializeMenu(); 
         }
 
         private void OpenOnStartupItem_Click(object sender, EventArgs e)
         {
+            Properties.Settings.Default.MinimizeOnStartup = false;
+            Properties.Settings.Default.Save();
             InitializeMenu();
         }
 
@@ -532,6 +595,9 @@ namespace TempViewer
 
                 temperatureBox.Height = Properties.Settings.Default.WindowHeight;
                 temperatureBox.Width = Properties.Settings.Default.WindowWidth;
+                temperatureBox.SelectAll();
+                temperatureBox.SelectionAlignment = HorizontalAlignment.Left;
+                temperatureBox.DeselectAll();
 
                 Properties.Settings.Default.Save();
             }
@@ -552,10 +618,13 @@ namespace TempViewer
                 TabStop = false,
                 Height = Properties.Settings.Default.WindowHeight,
                 Width = Properties.Settings.Default.WindowWidth,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left,
                 Dock = DockStyle.Top,
                 Font = Properties.Settings.Default.FontTempBox
             };
+            temperatureBox.SelectAll();
+            temperatureBox.SelectionAlignment = HorizontalAlignment.Left;
+            temperatureBox.DeselectAll();
             temperatureBox.MouseDoubleClick += Form1_MouseDoubleClick;
             this.Controls.Add(temperatureBox);
             UpdateTemperatureText(0);
@@ -708,7 +777,7 @@ namespace TempViewer
                 if (await Task.WhenAny(connectTask, Task.Delay(2000)) != connectTask)
                 {
                     ShowErrorOnce("Connection timeout.");
-                    UpdateTemperatureText(0);
+                    UpdateTemperatureText(0); 
                     return null;
                 }
 
@@ -800,18 +869,43 @@ namespace TempViewer
                     else if (!isAlarmShown)
                     {
                         isAlarmShown = true;
-                        DialogResult result = MessageBox.Show(
-                            $"ALERT! Temperature reached {roundedTemperature:F1} °C. Do you want to change the alarm temperature?",
-                            "Alarm Notification",
-                            MessageBoxButtons.YesNo,
-                            MessageBoxIcon.Warning
-                        );
 
-                        if (result == DialogResult.Yes)
+                        using (Form topmostForm = new Form())
                         {
-                            SetAlarmItem_Click(null, null);
+                            topmostForm.Size = new Size(0, 0);
+                            topmostForm.StartPosition = FormStartPosition.Manual;
+                            topmostForm.Location = new Point(-2000, -2000); // Скрываем за экраном
+                            topmostForm.ShowInTaskbar = false;
+                            topmostForm.TopMost = true;
+                            topmostForm.Show();
+                            topmostForm.Focus();
+
+                            DialogResult result = MessageBox.Show(
+                                topmostForm,
+                                $"ALERT! Temperature reached {roundedTemperature:F1} °C. Do you want to change the alarm temperature?",
+                                "Alarm Notification",
+                                MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Warning
+                            );
+
+                            if (result == DialogResult.Yes)
+                            {
+                                SetAlarmItem_Click(null, null);
+                            }
                         }
-                    }
+                            //isAlarmShown = true;
+                            //DialogResult result = MessageBox.Show(
+                            //    $"ALERT! Temperature reached {roundedTemperature:F1} °C. Do you want to change the alarm temperature?",
+                            //    "Alarm Notification",
+                            //    MessageBoxButtons.YesNo,
+                            //    MessageBoxIcon.Warning
+                            //);
+
+                            //if (result == DialogResult.Yes)
+                            //{
+                            //    SetAlarmItem_Click(null, null);
+                            //}
+                        }
 
                     errorShown = false;
                 }
@@ -848,8 +942,17 @@ namespace TempViewer
                 Properties.Settings.Default.WindowWidth = this.Width;
                 Properties.Settings.Default.WindowHeight = this.Height;
             }
-           
-            Properties.Settings.Default.WindowLocation = this.Location;
+            if (this.WindowState != FormWindowState.Minimized && !isMinimizedView)
+            {
+                Properties.Settings.Default.WindowLocation = this.Location;
+                Properties.Settings.Default.WindowWidth = this.Width;
+                Properties.Settings.Default.WindowHeight = this.Height;
+            }
+            else if (this.WindowState == FormWindowState.Minimized)
+            {
+                Properties.Settings.Default.WindowWidth = 175;
+                Properties.Settings.Default.WindowHeight = 100;
+            }
             Properties.Settings.Default.FlagSizeForm = isMinimizedView;
             Properties.Settings.Default.Save();
             base.OnFormClosing(e);
@@ -885,12 +988,15 @@ namespace TempViewer
                         temperatureBox.SelectionColor = Properties.Settings.Default.FontTempColor;
                         temperatureBox.AppendText(temperatureText);
                         temperatureBox.HideSelection = true;
+
+                        temperatureBox.SelectAll();
+                        temperatureBox.SelectionAlignment = HorizontalAlignment.Left;
+                        temperatureBox.DeselectAll();
                     }
                     else
                     {
                         temperatureBox.Clear();
                         temperatureBox.SelectionFont = new Font(Properties.Settings.Default.FontTempBox, Properties.Settings.Default.FontTenpStyle);
-
                         string prefix = "Red Pitaya ";
                         string temperatureText = (temperature == 0) ? "--°C" : $"{temperature}°C";
                         globalTemp = (temperature == 0) ? 0 : temperature;
@@ -898,11 +1004,14 @@ namespace TempViewer
                         temperatureBox.AppendText(prefix);
                         temperatureBox.AppendText(temperatureText);
                         temperatureBox.HideSelection = true;
+
+                        temperatureBox.SelectAll();
+                        temperatureBox.SelectionAlignment = HorizontalAlignment.Left;
+                        temperatureBox.DeselectAll();
                     }
                 }
                 catch (ObjectDisposedException)
                 {
-                    // temperatureBox уничтожен между проверкой и использованием — игнорируем
                 }
             }
             

@@ -1,13 +1,6 @@
 D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\TempViewer.exe.config
 D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\TempViewer.exe
 D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\TempViewer.pdb
-D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.AssemblyReference.cache
-D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.Form1.resources
-D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.Properties.Resources.resources
-D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.GenerateResource.cache
-D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.CoreCompileInputs.cache
-D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.exe
-D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.pdb
 D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\Microsoft.Bcl.AsyncInterfaces.dll
 D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\System.Buffers.dll
 D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\System.IO.Pipelines.dll
@@ -28,4 +21,11 @@ D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\System.Text.Encodings.Web.xml
 D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\System.Text.Json.xml
 D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\System.Threading.Tasks.Extensions.xml
 D:\C#\Temp_RedPitaya\TempViewerV1.1\bin\Debug\System.ValueTuple.xml
+D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.AssemblyReference.cache
+D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.Form1.resources
+D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.Properties.Resources.resources
+D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.GenerateResource.cache
+D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.CoreCompileInputs.cache
 D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.csproj.Up2Date
+D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.exe
+D:\C#\Temp_RedPitaya\TempViewerV1.1\obj\Debug\TempViewer.pdb

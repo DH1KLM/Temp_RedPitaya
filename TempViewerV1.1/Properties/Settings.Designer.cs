@@ -156,7 +156,7 @@ namespace TempViewer.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("155")]
+        [global::System.Configuration.DefaultSettingValueAttribute("175")]
         public int WindowWidth {
             get {
                 return ((int)(this["WindowWidth"]));
@@ -192,7 +192,7 @@ namespace TempViewer.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("-1, -1")]
+        [global::System.Configuration.DefaultSettingValueAttribute("1, 1")]
         public global::System.Drawing.Point WindowLocation {
             get {
                 return ((global::System.Drawing.Point)(this["WindowLocation"]));
@@ -235,6 +235,18 @@ namespace TempViewer.Properties {
             }
             set {
                 this["TargetPort"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool MinimizeOnStartup {
+            get {
+                return ((bool)(this["MinimizeOnStartup"]));
+            }
+            set {
+                this["MinimizeOnStartup"] = value;
             }
         }
     }
